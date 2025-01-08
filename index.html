@@ -93,7 +93,7 @@
     }
 
     async function loadBuildingData(buildingName) {
-      const response = await fetch(buildingName + '.json');
+      const response = await fetch(buildingName + 'Gen1.json');
       const csvText = await response.text();
       const rows = csvText.split('\n').filter(row => row.trim());
       const data = {};
