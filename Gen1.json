@@ -1,0 +1,22 @@
+[
+  {
+    "Material": "Concrete",
+    "Quantity": 200
+  },
+  {
+    "Material": "Floor",
+    "Quantity": 100
+  },
+  {
+    "Material": "Asphalt",
+    "Quantity": 150
+  },
+  {
+    "Material": "Curtain wall",
+    "Quantity": 270
+  },
+  {
+    "Material": "Wall",
+    "Quantity": 30
+  }
+]

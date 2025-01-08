@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Building Material Information</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ffffff;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #333333;
+    }
+    select, button {
+      background-color: #333333;
+      color: #ffffff;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover, select:hover {
+      background-color: #555555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Building Material Information</h1>
+
+  <label for="building-dropdown">Select Building: </label>
+  <select id="building-dropdown">
+    <option value="">--Choose a building--</option>
+  </select>
+  <button onclick="addBuilding()">Add Building</button>
+
+  <table id="material-table">
+    <thead>
+      <tr>
+        <th>Material</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Table rows will be added dynamically -->
+    </tbody>
+  </table>
+
+  <div>
+    <h2>Delta Calculation</h2>
+    <label for="delta-building-1">Building 1: </label>
+    <select id="delta-building-1"></select>
+
+    <label for="delta-building-2">Building 2: </label>
+    <select id="delta-building-2"></select>
+
+    <button onclick="calculateDelta()">Calculate Delta</button>
+  </div>
+
+  <script>
+    const materialTable = document.getElementById('material-table');
+    const buildingDropdown = document.getElementById('building-dropdown');
+    const deltaBuilding1 = document.getElementById('delta-building-1');
+    const deltaBuilding2 = document.getElementById('delta-building-2');
+
+    const buildings = {}; // To store building data
+    const materials = new Set();
+
+    // Fetch CSV filenames dynamically and populate the dropdown
+    async function loadBuildingNames() {
+      const response = await fetch('building-list.json'); // JSON file containing the list of CSV files
+      const buildingNames = await response.json();
+      buildingNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        buildingDropdown.appendChild(option);
+      });
+    }
+
+    async function loadBuildingData(buildingName) {
+      const response = await fetch(buildingName + '.json');
+      const csvText = await response.text();
+      const rows = csvText.split('\n').filter(row => row.trim());
+      const data = {};
+      rows.forEach(row => {
+        const [material, quantity] = row.split(',');
+        data[material.trim()] = parseFloat(quantity.trim()) || 0;
+        materials.add(material.trim());
+      });
+      buildings[buildingName] = data;
+    }
+
+    function addBuilding() {
+      const buildingName = buildingDropdown.value;
+      if (!buildingName || buildings[buildingName]) return;
+
+      loadBuildingData(buildingName).then(() => {
+        updateTable();
+        updateDeltaDropdowns();
+      });
+    }
+
+    function updateTable() {
+      const materialRows = {};
+
+      // Prepare the header row
+      const headerRow = materialTable.querySelector('thead tr');
+      headerRow.innerHTML = '<th>Material</th>';
+      Object.keys(buildings).forEach(building => {
+        const th = document.createElement('th');
+        th.textContent = building;
+        headerRow.appendChild(th);
+      });
+      const deltaTh = document.createElement('th');
+      deltaTh.textContent = 'Delta';
+      headerRow.appendChild(deltaTh);
+
+      // Prepare the material rows
+      materials.forEach(material => {
+        if (!materialRows[material]) {
+          const row = document.createElement('tr');
+          const materialCell = document.createElement('td');
+          materialCell.textContent = material;
+          row.appendChild(materialCell);
+          materialRows[material] = row;
+        }
+      });
+
+      // Add building data to rows
+      Object.keys(buildings).forEach(building => {
+        const buildingData = buildings[building];
+        materials.forEach(material => {
+          const row = materialRows[material];
+          const cell = document.createElement('td');
+          cell.textContent = buildingData[material] || 0;
+          row.appendChild(cell);
+        });
+      });
+
+      // Add delta column
+      Object.values(materialRows).forEach(row => {
+        const deltaCell = document.createElement('td');
+        deltaCell.textContent = ''; // Placeholder for delta values
+        row.appendChild(deltaCell);
+        materialTable.querySelector('tbody').appendChild(row);
+      });
+    }
+
+    function updateDeltaDropdowns() {
+      deltaBuilding1.innerHTML = '';
+      deltaBuilding2.innerHTML = '';
+      Object.keys(buildings).forEach(building => {
+        const option1 = document.createElement('option');
+        const option2 = document.createElement('option');
+        option1.value = building;
+        option2.value = building;
+        option1.textContent = building;
+        option2.textContent = building;
+        deltaBuilding1.appendChild(option1);
+        deltaBuilding2.appendChild(option2);
+      });
+    }
+
+    function calculateDelta() {
+      const building1 = deltaBuilding1.value;
+      const building2 = deltaBuilding2.value;
+      if (!building1 || !building2 || building1 === building2) return;
+
+      const building1Data = buildings[building1];
+      const building2Data = buildings[building2];
+
+      const rows = materialTable.querySelector('tbody').querySelectorAll('tr');
+      rows.forEach(row => {
+        const material = row.children[0].textContent;
+        const deltaCell = row.lastElementChild;
+        const delta = (building1Data[material] || 0) - (building2Data[material] || 0);
+        deltaCell.textContent = delta;
+      });
+    }
+
+    // Initialize the website
+    loadBuildingNames();
+  </script>
+</body>
+</html>
